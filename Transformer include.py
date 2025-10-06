@@ -20,7 +20,7 @@ train_generator = train_datagen.flow_from_directory('/Users/ravikishan/Desktop/H
 val_datagen = ImageDataGenerator(rescale=1./255)
 val_generator = val_datagen.flow_from_directory('/Users/ravikishan/Desktop/HE/Test', target_size=(224, 224), batch_size=32, class_mode='binary')
 
-# Define a custom transformer-based pooling layer
+# custom transformer-based pooling layer
 class TransformerPooling(Layer):
     def __init__(self, output_dim, **kwargs):
         self.output_dim = output_dim
@@ -37,15 +37,15 @@ class TransformerPooling(Layer):
         return pooled_output
 
 
-# Define the ResNet50 model for feature extraction
+# ResNet50 model for feature extraction
 resnet = ResNet50(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
 
-# Replace the GlobalAveragePooling2D layer with the custom TransformerPooling layer
+# GlobalAveragePooling2D layer with the custom TransformerPooling layer
 
 x = resnet.output
 x = TransformerPooling(2048)(x)
 
-# Add a final dense layer for binary classification
+# A final dense layer for binary classification
 outputs = Dense(1, activation='sigmoid')(x)
 
 # Create the final model
@@ -55,23 +55,22 @@ model = Model(inputs=resnet.input, outputs=outputs)
 for layer in resnet.layers:
     layer.trainable = False
 
-# Compile the model
+# Compile model
 model.compile(optimizer=Adam(learning_rate=1e-3), loss='binary_crossentropy', metrics=['accuracy'])
 
-# Implement callbacks for early stopping and model checkpoint
+# Callbacks implementation  for early stopping and model checkpoint
 early_stopping = EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
 model_checkpoint = ModelCheckpoint('best_model.keras', save_best_only=True)
 
-# Train the model with advanced configurations
+# Model training with advanced configurations
 model.fit(train_generator, epochs=10, validation_data=val_generator, callbacks=[early_stopping, model_checkpoint])
 
-# Evaluate the model
+# Model Evaluation
 loss, accuracy = model.evaluate(val_generator)
 print(f'Validation loss: {loss}, Validation accuracy: {accuracy}')
 
 
-
-# Calculate predictions and probabilities for ROC curve
+#  Predictions and probabilities calculation for ROC curve
 y_true = val_generator.classes
 y_pred = model.predict(val_generator).flatten()
 
@@ -86,13 +85,13 @@ plt.title('Receiver Operating Characteristic (ROC) Curve')
 plt.legend(loc='lower right')
 plt.show()
 
-# Calculate F1 score
+#  F1 score
 y_pred_binary = (y_pred > 0.5).astype(int)
 f1 = f1_score(y_true, y_pred_binary)
 print(f'F1 score: {f1}')
 
 def get_grad_cam(model, img_array):
-    # Identify the last convolutional layer in ResNet50
+    # Identification of the last convolutional layer in ResNet50
     last_conv_layer_name = 'conv5_block3_out'
     
     # Create a model that maps the input image to the activations of the last conv layer
